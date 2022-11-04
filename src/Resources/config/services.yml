@@ -1,0 +1,34 @@
+services:
+  ikuzo.chronopost_plugin.form.type.chronopost_shipping_gateway:
+    class: Ikuzo\SyliusChronopostPlugin\Form\Type\ShippingGatewayType
+    tags:
+      - { name: bitbag.shipping_gateway_configuration_type, type: 'chronopost', label: "Chronopost" }
+      - { name: form.type }
+    autowire: true
+
+  ikuzo.chronopost_plugin.pickup.provider.chronopost:
+    class : Ikuzo\SyliusChronopostPlugin\Pickup\Provider\ChronopostProvider
+    arguments:
+      - '@ikuzo.chronopost_plugin.api.soap_client'
+      - '@setono_sylius_pickup_point.factory.pickup_point'
+    tags:
+      - { name: setono_sylius_pickup_point.provider, code: chronopost, label: Chronopost }
+
+  ikuzo.chronopost_plugin.api.soap_client:
+    class: Ikuzo\SyliusChronopostPlugin\Api\SoapClient
+
+  ikuzo.chronopost_plugin.api.shipping_label_fetcher:
+    class: Ikuzo\SyliusChronopostPlugin\Api\ShippingLabelFetcher
+    arguments:
+      - '@session.flash_bag'
+      - '@ikuzo.chronopost_plugin.api.soap_client'
+
+  ikuzo.chronopost_plugin.event_listener.chronopost_shipping_export:
+    class: Ikuzo\SyliusChronopostPlugin\EventListener\ShippingExportEventListener
+    arguments:
+      - '@filesystem'
+      - '@bitbag.repository.shipping_export'
+      - '%bitbag.shipping_labels_path%'
+      - '@ikuzo.chronopost_plugin.api.shipping_label_fetcher'
+    tags:
+      - { name: kernel.event_listener, event: 'bitbag.shipping_export.export_shipment', method: exportShipment }

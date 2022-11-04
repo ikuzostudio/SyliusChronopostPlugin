@@ -1,0 +1,35 @@
+ikuzo:
+  ui:
+    chronopost: 
+      username: Numéro de compte
+      print_mode: Format des étiquettes
+      contractNumber: Numéro de contrat
+      password: Mot de passe
+      billing_address: 
+        label: Adresse de facturation
+      return_address: 
+        label: Adresse de retour
+      shipping_address: 
+        label: Adresse d'expédition
+        company: Société
+        firstname: Prénom
+        lastname: Nom
+        address1: Adresse
+        address2: Adresse 2
+        city: Ville
+        zipcode: Code postal
+        country: Pays
+        email: Email
+        phone: Téléphone
+        mobile: Portable
+      products:
+        chrono10: CHRONO10 
+        chrono13: CHRONO13 
+        chrono18: CHRONO18 
+        chronorelais: CHRONORELAIS 
+        chronoclassic: CHRONOCLASSIC 
+        chronoexpress: CHRONOEXPRESS 
+        relaiseurope: RELAISEUROPE 
+        relaisdom: RELAISDOM 
+        sameday: SAMEDAY 
+        chronord: CHRONO PRECISE

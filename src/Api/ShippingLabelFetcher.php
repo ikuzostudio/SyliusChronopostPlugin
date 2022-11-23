@@ -258,6 +258,14 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
             case 'CHRONORDV':
                 return '2E';
                 break;
+
+            case 'CHRONOFRESH13':
+                return '2R';
+                break;
+            
+            case 'CHRONOFREEZE13':
+                return '2S';
+                break;
         }
     }
 

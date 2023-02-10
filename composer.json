@@ -12,7 +12,7 @@
     "require": {
         "php": "^8.0",
         "bitbag/shipping-export-plugin": "^1.7",
-        "debuss-a/mtomsoapclient": "^2.1",
+        "debuss-a/mtomsoapclient": "^3.0",
         "setono/sylius-pickup-point-plugin": "^1.1",
         "sylius/sylius": "^1.11"
     },

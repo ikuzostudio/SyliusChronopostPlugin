@@ -23,7 +23,9 @@ final class ShippingGatewayType extends AbstractType
         'RELAISEUROPE',
         'RELAISDOM',
         'SAMEDAY',
-        'CHRONORDV'
+        'CHRONORDV',
+        'CHRONOFRESH13',
+        'CHRONOFREEZE13'
     ];
 
     public function __construct(private EntityManagerInterface $em)
@@ -36,6 +38,10 @@ final class ShippingGatewayType extends AbstractType
             ->add('contractNumber', TextType::class, [
                 'label' => 'ikuzo.ui.chronopost.username',
                 'required' => true
+            ])
+            ->add('subAccount', TextType::class, [
+                'label' => 'ikuzo.ui.chronopost.sub_account',
+                'required' => false
             ])
             ->add('password', TextType::class, [
                 'label' => 'ikuzo.ui.chronopost.password',

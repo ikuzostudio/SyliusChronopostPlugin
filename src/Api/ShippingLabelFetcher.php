@@ -90,10 +90,10 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
     private function getHeaderValue($shippingGateway): array
     {
         return [
-            'accountNumber' => (int)$shippingGateway->getConfigValue('contractNumber'),
+            'accountNumber' => (int) $shippingGateway->getConfigValue('contractNumber'),
             'idEmit' => 'CHRFR',
             'identWebPro' => null,
-            'subAccount' => null,
+            'subAccount' => $shippingGateway->getConfigValue('subAccount') ?: null,
         ];
     }
 
@@ -257,6 +257,14 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
 
             case 'CHRONORDV':
                 return '2E';
+                break;
+
+            case 'CHRONOFRESH13':
+                return '2R';
+                break;
+            
+            case 'CHRONOFREEZE13':
+                return '2S';
                 break;
         }
     }

@@ -3,6 +3,7 @@ ikuzo:
     chronopost: 
       username: Numéro de compte
       print_mode: Format des étiquettes
+      sub_account: Sous-compte (facultatif)
       contractNumber: Numéro de contrat
       password: Mot de passe
       billing_address: 

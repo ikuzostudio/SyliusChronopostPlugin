@@ -39,6 +39,10 @@ final class ShippingGatewayType extends AbstractType
                 'label' => 'ikuzo.ui.chronopost.username',
                 'required' => true
             ])
+            ->add('subAccount', TextType::class, [
+                'label' => 'ikuzo.ui.chronopost.sub_account',
+                'required' => false
+            ])
             ->add('password', TextType::class, [
                 'label' => 'ikuzo.ui.chronopost.password',
                 'required' => true,

@@ -90,10 +90,10 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
     private function getHeaderValue($shippingGateway): array
     {
         return [
-            'accountNumber' => (int)$shippingGateway->getConfigValue('contractNumber'),
+            'accountNumber' => (int) $shippingGateway->getConfigValue('contractNumber'),
             'idEmit' => 'CHRFR',
             'identWebPro' => null,
-            'subAccount' => null,
+            'subAccount' => $shippingGateway->getConfigValue('subAccount') ?: null,
         ];
     }
 

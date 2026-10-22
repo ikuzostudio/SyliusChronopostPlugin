@@ -3,6 +3,10 @@ ikuzo:
     chronopost: 
       username: Numéro de compte
       print_mode: Format des étiquettes
+      weight_unit: Unité de poids
+      recipient_pre_alert: Avertir le destinataire par mail
+      fresh_expiration_days: Délai de péremption Chronofresh (jours)
+      sub_account: Sous-compte (facultatif)
       contractNumber: Numéro de contrat
       password: Mot de passe
       billing_address: 

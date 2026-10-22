@@ -57,7 +57,7 @@ final class SoapClient implements SoapClientInterface
         return $result->return;
     }
 
-    public function findPickupPoint(string $code): ?stdClass
+    public function findPickupPoint(string $code): ?\stdClass
     {
         $client = new MTOMSoapClient('https://www.chronopost.fr/recherchebt-ws-cxf/PointRelaisServiceWS?wsdl', [
             'wsdl_cache' => 0,

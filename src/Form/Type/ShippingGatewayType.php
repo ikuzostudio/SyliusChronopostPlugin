@@ -6,7 +6,9 @@ namespace Ikuzo\SyliusChronopostPlugin\Form\Type;
 
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Sylius\Component\Core\Model\ShippingMethod;
@@ -23,7 +25,11 @@ final class ShippingGatewayType extends AbstractType
         'RELAISEUROPE',
         'RELAISDOM',
         'SAMEDAY',
-        'CHRONORDV'
+        'CHRONORDV',
+        'CHRONOFRESH13',
+        'CHRONOFRESH18',
+        'CHRONOFREEZE13',
+        'SHOPTOSHOP'
     ];
 
     public function __construct(private EntityManagerInterface $em)
@@ -36,6 +42,10 @@ final class ShippingGatewayType extends AbstractType
             ->add('contractNumber', TextType::class, [
                 'label' => 'ikuzo.ui.chronopost.username',
                 'required' => true
+            ])
+            ->add('subAccount', TextType::class, [
+                'label' => 'ikuzo.ui.chronopost.sub_account',
+                'required' => false
             ])
             ->add('password', TextType::class, [
                 'label' => 'ikuzo.ui.chronopost.password',
@@ -60,13 +70,39 @@ final class ShippingGatewayType extends AbstractType
                     'Format PDF sans preuve de dépôt' => 'SPD'
                 ]
             ])
+            ->add('weight_unit', ChoiceType::class, [
+                'label' => 'ikuzo.ui.chronopost.weight_unit',
+                'required' => true,
+                'choices' => [
+                    'Grammes' => 'g',
+                    'Kilogrammes' => 'kg',
+                ],
+            ])
+            ->add('recipientPreAlert', CheckboxType::class, [
+                'label' => 'ikuzo.ui.chronopost.recipient_pre_alert',
+                'required' => false,
+            ])
+            ->add('fresh_expiration_days', IntegerType::class, [
+                'label' => 'ikuzo.ui.chronopost.fresh_expiration_days',
+                'required' => false,
+            ])
         ;
 
-        foreach (self::$products as $product) {
-            foreach ($this->em->getRepository(ShippingMethod::class)->findAll() as $shippingMethod) {
-                $choices[$shippingMethod->getCode()] = $shippingMethod->getId();
+        $choices = [];
+        foreach ($this->em->getRepository(ShippingMethod::class)->findBy(['enabled' => true]) as $shippingMethod) {
+            try {
+                $translation = $shippingMethod->getTranslations()->first();
+            } catch (\TypeError) {
+                $translation = false;
             }
 
+            $name = $translation ? $translation->getName() : null;
+            $label = $name ? sprintf('%s (%s)', $name, $shippingMethod->getCode()) : $shippingMethod->getCode();
+
+            $choices[$label] = $shippingMethod->getId();
+        }
+
+        foreach (self::$products as $product) {
             $builder->add('product_'.$product, ChoiceType::class, [
                 'label' => 'ikuzo.ui.chronopost.products.'.$product,
                 'choices' => $choices,

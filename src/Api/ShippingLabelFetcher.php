@@ -23,12 +23,23 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
             'headerValue' => $this->getHeaderValue($shippingGateway),
             'shipperValue' => $this->getShipperValue($shippingGateway),
             'customerValue' => $this->getCustomerValue($shipment),
-            'recipientValue' => $this->getRecipientValue($shipment),
+            'recipientValue' => $this->getRecipientValue($shippingGateway, $shipment),
             'refValue' => $this->getRefValue($shippingGateway, $shipment),
             'skybillValue' => $this->getSkybillValue($shippingGateway, $shipment, $weight),
             'skybillParamsValue' => $this->getSkybillParams($shippingGateway),
             'password' => $shippingGateway->getConfigValue('password'),
         ]);
+
+        $expirationDays = $shippingGateway->getConfigValue('fresh_expiration_days');
+
+        if (
+            in_array($this->guessProductType($shippingGateway, $shipment), ['CHRONOFRESH13', 'CHRONOFRESH18'], true)
+            && (int) $expirationDays > 0
+        ) {
+            $data['scheduledValue'] = [
+                'expirationDate' => (new \DateTimeImmutable('now'))->modify(sprintf('+%d days', (int) $expirationDays))->format('c'),
+            ];
+        }
 
         try {
             $this->response = $this->soapClient->createShipment($data);
@@ -55,12 +66,16 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
 
     private function getSkybillValue($shippingGateway, $shipment, $weight): array
     {
+        if ($shippingGateway->getConfigValue('weight_unit') === 'g') {
+            $weight /= 1000;
+        }
+
         return [
             'evtCode' => 'DC',
             'productCode' => $this->guessProductCode($this->guessProductType($shippingGateway, $shipment)),
             'shipDate' => date('c'),
             'shipHour' => date('G'),
-            'Weight' => ($weight > 0) ? $weight : 1,
+            'weight' => ($weight > 0) ? $weight : 1,
             'weightUnit' => 'KGM',
             'service' => 0,
             'objectType' => 'MAR',
@@ -90,10 +105,10 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
     private function getHeaderValue($shippingGateway): array
     {
         return [
-            'accountNumber' => (int)$shippingGateway->getConfigValue('contractNumber'),
+            'accountNumber' => (int) $shippingGateway->getConfigValue('contractNumber'),
             'idEmit' => 'CHRFR',
             'identWebPro' => null,
-            'subAccount' => null,
+            'subAccount' => $shippingGateway->getConfigValue('subAccount') ?: null,
         ];
     }
 
@@ -118,7 +133,9 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
 
     public function getCustomerValue($shipment): array
     {
-        $shippingAddress = $shipment->getOrder()->getShippingAddress();
+        $order = $shipment->getOrder();
+        $shippingAddress = $order->getShippingAddress();
+        $customer = $order->getCustomer();
 
         $data = [
             'customerCivility' => 'E',
@@ -135,12 +152,9 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
             'customerPreAlert' => '0'
         ];
 
-        if ($shippingAddress->getCustomer() !== null) {
-            $data['customerEmail'] = $shippingAddress->getCustomer()->getEmail();
-        }
-
-        if ($shippingAddress->getCustomer() !== null) {
-            switch ($shippingAddress->getCustomer()->getGender()) {
+        if ($customer !== null) {
+            $data['customerEmail'] = $customer->getEmail();
+            switch ($customer->getGender()) {
                 case 'm':
                     $data['customerCivility'] = 'M';
                     break;
@@ -148,7 +162,7 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
                 case 'f':
                     $data['customerCivility'] = 'L';
                     break;
-                
+
                 default:
                     $data['customerCivility'] = 'E';
                     break;
@@ -158,9 +172,11 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
         return $data;
     }
 
-    private function getRecipientValue($shipment): array
+    private function getRecipientValue($shippingGateway, $shipment): array
     {
-        $shippingAddress = $shipment->getOrder()->getShippingAddress();
+        $order = $shipment->getOrder();
+        $customer = $order->getCustomer();
+        $shippingAddress = $order->getShippingAddress();
 
         $data = [
             'recipientCivility' => 'E',
@@ -174,15 +190,12 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
             'recipientEmail' => null,
             'recipientPhone' => $shippingAddress->getPhoneNumber(),
             'recipientMobilePhone' => $shippingAddress->getPhoneNumber(),
-            'recipientPreAlert' => '0'
+            'recipientPreAlert' => $shippingGateway->getConfigValue('recipientPreAlert') ? '1' : '0'
         ];
 
-        if ($shippingAddress->getCustomer() !== null) {
-            $data['recipientEmail'] = $shippingAddress->getCustomer()->getEmail();
-        }
-
-        if ($shippingAddress->getCustomer() !== null) {
-            switch ($shippingAddress->getCustomer()->getGender()) {
+        if ($customer !== null) {
+            $data['recipientEmail'] = $customer->getEmail();
+            switch ($customer->getGender()) {
                 case 'm':
                     $data['recipientCivility'] = 'M';
                     break;
@@ -190,7 +203,7 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
                 case 'f':
                     $data['recipientCivility'] = 'L';
                     break;
-                
+
                 default:
                     $data['recipientCivility'] = 'E';
                     break;
@@ -221,44 +234,24 @@ class ShippingLabelFetcher implements ShippingLabelFetcherInterface
 
     private function guessProductCode(string $productType): string
     {
-        switch ($productType) {
-            case 'CHRONO13':
-                return '01';
-                break;
+        $productCodes = [
+            'CHRONO13' => '01',
+            'CHRONO10' => '02',
+            'CHRONO18' => '16',
+            'CHRONORELAIS' => '86',
+            'RELAISDOM' => '86',
+            'CHRONOCLASSIC' => '44',
+            'CHRONOEXPRESS' => '17',
+            'RELAISEUROPE' => '49',
+            'SAMEDAY' => '2P',
+            'CHRONORDV' => '2E',
+            'CHRONOFRESH13' => '2R',
+            'CHRONOFRESH18' => '5Z',
+            'CHRONOFREEZE13' => '2S',
+            'SHOPTOSHOP' => '5X'
+        ];
 
-            case 'CHRONO10':
-                return '02';
-                break;
-
-            case 'CHRONO18':
-                return '16';
-                break;
-
-            case 'CHRONORELAIS':
-            case 'RELAISDOM':
-                return '86';
-                break;
-
-            case 'CHRONOCLASSIC':
-                return '44';
-                break;
-
-            case 'CHRONOEXPRESS':
-                return '17';
-                break;
-            
-            case 'RELAISEUROPE':
-                return '49';
-                break;
-
-            case 'SAMEDAY':
-                return '2P';
-                break;
-
-            case 'CHRONORDV':
-                return '2E';
-                break;
-        }
+        return $productCodes[$productType] ?? '';
     }
 
     public function getLabelContent(): ?array
